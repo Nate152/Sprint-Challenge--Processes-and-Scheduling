@@ -8,7 +8,7 @@
 
 #define MAX_TOKENS 100
 #define COMMANDLINE_BUFSIZE 1024
-#define DEBUG 1 // Set to 1 to turn on some debugging output, or 0 to turn off
+#define DEBUG 0 // Set to 1 to turn on some debugging output, or 0 to turn off
 
 /**
  * Parse the command line.
@@ -32,22 +32,22 @@
  */
 char **parse_commandline(char *str, char **args, int *args_count)
 {
-    char *token;
+  char *token;
 
-    *args_count = 0;
+  *args_count = 0;
 
-    token = strtok(str, " \t\n\r");
+  token = strtok(str, " \t\n\r");
 
-    while (token != NULL && *args_count < MAX_TOKENS - 1)
-    {
-        args[(*args_count)++] = token;
+  while (token != NULL && *args_count < MAX_TOKENS - 1)
+  {
+    args[(*args_count)++] = token;
 
-        token = strtok(NULL, " \t\n\r");
-    }
+    token = strtok(NULL, " \t\n\r");
+  }
 
-    args[*args_count] = NULL;
+  args[*args_count] = NULL;
 
-    return args;
+  return args;
 }
 
 /**
@@ -55,78 +55,84 @@ char **parse_commandline(char *str, char **args, int *args_count)
  */
 int main(void)
 {
-    // Holds the command line the user types in
-    char commandline[COMMANDLINE_BUFSIZE];
+  // Holds the command line the user types in
+  char commandline[COMMANDLINE_BUFSIZE];
 
-    // Holds the parsed version of the command line
-    char *args[MAX_TOKENS];
+  // Holds the parsed version of the command line
+  char *args[MAX_TOKENS];
 
-    // How many command line args the user typed
-    int args_count;
+  // How many command line args the user typed
+  int args_count;
 
-    // Shell loops forever (until we tell it to exit)
-    while (1)
+  // Shell loops forever (until we tell it to exit)
+  while (1)
+  {
+    // Print a prompt
+    printf("%s", PROMPT);
+    fflush(stdout); // Force the line above to print
+
+    // Read input from keyboard
+    fgets(commandline, sizeof commandline, stdin);
+
+    // Exit the shell on End-Of-File (CRTL-D)
+    if (feof(stdin))
     {
-        // Print a prompt
-        printf("%s", PROMPT);
-        fflush(stdout); // Force the line above to print
+      break;
+    }
 
-        // Read input from keyboard
-        fgets(commandline, sizeof commandline, stdin);
+    // Parse input into individual arguments
+    parse_commandline(commandline, args, &args_count);
 
-        // Exit the shell on End-Of-File (CRTL-D)
-        if (feof(stdin))
-        {
-            break;
-        }
+    if (args_count == 0)
+    {
+      // If the user entered no commands, do nothing
+      continue;
+    }
 
-        // Parse input into individual arguments
-        parse_commandline(commandline, args, &args_count);
+    // Exit the shell if args[0] is the built-in "exit" command
+    if (strcmp(args[0], "exit") == 0)
+    {
+      break;
+    }
 
-        if (args_count == 0)
-        {
-            // If the user entered no commands, do nothing
-            continue;
-        }
+    // cd functionality
+    if (strcmp(args[0], "cd") == 0)
+    {
+      if (chdir(args[1]) == 0)
+      {
+        continue;
+      }
+      else
+      {
+        perror("Error");
+      }
+    }
 
-        // Exit the shell if args[0] is the built-in "exit" command
-        if (strcmp(args[0], "exit") == 0)
-        {
-            break;
-        }
-
-        if (strcmp(args[0], "cd") == 0)
-        {
-            if (chdir(args[1]) == 0)
-                continue;
-            else
-                perror("Error");
-        }
-
-        // execute commands
-        if (fork() == 0)
-        {
-            execvp(args[0], &args[0]);
-            break;
-        }
-        else
-        {
-            wait(NULL);
+    // execute commands
+    if (fork() == 0)
+    {
+      execvp(args[0], &args[0]);
+      break;
+    }
+    else
+    {
+      wait(NULL);
+    }
 
 #if DEBUG
 
-            // Some debugging output
+    // Some debugging output
 
-            // Print out the parsed command line in args[]
-            for (int i = 0; args[i] != NULL; i++)
-            {
-                printf("%d: '%s'\n", i, args[i]);
-            }
+    // Print out the parsed command line in args[]
+    for (int i = 0; args[i] != NULL; i++)
+    {
+      printf("%d: '%s'\n", i, args[i]);
+    }
 
 #endif
 
-            /* Add your code for implementing the shell's logic here */
-        }
+    /* Add your code for implementing the shell's logic here */
+  }
 
-        return 0;
-    }
+  return 0;
+}
